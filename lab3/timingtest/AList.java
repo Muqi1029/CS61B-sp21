@@ -1,5 +1,7 @@
 package timingtest;
 
+import org.w3c.dom.html.HTMLImageElement;
+
 /** Array based list.
  *  @author Josh Hug
  */
@@ -34,7 +36,7 @@ public class AList<Item> {
     /** Inserts X into the back of the list. */
     public void addLast(Item x) {
         if (size == items.length) {
-            resize(size + 1);
+            resize((int) (size * 1.01));
         }
 
         items[size] = x;
@@ -62,5 +64,11 @@ public class AList<Item> {
         items[size - 1] = null;
         size = size - 1;
         return x;
+    }
+
+    public void of(Item ...args) {
+        for (int i = 0; i < args.length; i++) {
+            addLast(args[i]);
+        }
     }
 }
