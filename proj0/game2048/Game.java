@@ -6,7 +6,7 @@ import static game2048.Side.*;
  *  @author P. N. Hilfinger. */
 public class Game {
 
-    /** Controller for a game represented by MODEL, using SOURCE as
+    /** Controller for a game represented by MODEL, using SOURCE as the
      *  the source of key inputs and random Tiles. */
     public Game(Model model, InputSource source) {
         _model = model;
