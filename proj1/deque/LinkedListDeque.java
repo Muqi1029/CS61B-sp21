@@ -1,6 +1,8 @@
 package deque;
 
-public class LinkedListDeque<T> {
+import java.util.Iterator;
+
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
 
     public LinkedListDeque() {
         this.sentinel = new Node();
@@ -10,7 +12,7 @@ public class LinkedListDeque<T> {
     }
 
     public LinkedListDeque(LinkedListDeque other) {
-        this.sentinel = new Node();
+        sentinel = new Node();
         sentinel.next = sentinel;
         sentinel.prev = sentinel;
         size = 0;
@@ -33,11 +35,50 @@ public class LinkedListDeque<T> {
         return getRecursive(index - 1, next.next);
     }
 
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListDequeIterator();
+    }
+
+    /**
+     * iterator Object
+     */
+    private class LinkedListDequeIterator implements Iterator<T> {
+        int wizPos;
+        Node node;
+
+        public LinkedListDequeIterator() {
+            wizPos = 0;
+            node = sentinel;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return wizPos < size;
+        }
+
+        @Override
+        public T next() {
+            wizPos++;
+            node = node.next;
+            return node.item;
+        }
+    }
+
     private class Node {
+        /**
+         * store the item
+         */
         T item;
 
+        /**
+         * previous node
+         */
         Node prev;
 
+        /**
+         * next node
+         */
         Node next;
 
         public Node() {
@@ -52,6 +93,7 @@ public class LinkedListDeque<T> {
     private int size;
     private Node sentinel;
 
+    @Override
     public void addFirst(T item) {
         Node node = new Node(item);
 
@@ -64,6 +106,7 @@ public class LinkedListDeque<T> {
         size++;
     }
 
+    @Override
     public void addLast(T item) {
         size++;
         Node node = new Node(item);
@@ -75,14 +118,13 @@ public class LinkedListDeque<T> {
         sentinel.prev = node;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
 
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
     public void printDeque() {
         Node node = sentinel;
         while (node.next.item != null) {
@@ -91,6 +133,7 @@ public class LinkedListDeque<T> {
         }
     }
 
+    @Override
     public T removeFirst() {
         if (size == 0) return null;
         Node first = sentinel.next;

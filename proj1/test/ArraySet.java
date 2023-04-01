@@ -1,2 +1,4 @@
-package test;public class ArraySet {
+package test;
+
+public class ArraySet {
 }

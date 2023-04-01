@@ -1,26 +1,31 @@
 package deque;
 
 import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.function.Consumer;
 
-public class ArrayDeque<T> {
 
-    private class DequeIterator implements Iterable<T> {
+public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
+
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+
+    /**
+     * the iterator Object
+     */
+    private class ArrayDequeIterator implements Iterator<T> {
+        int wizPos = utilFunction(nextFirst + 1);
 
         @Override
-        public Iterator<T> iterator() {
-            return null;
+        public boolean hasNext() {
+            return wizPos != nextLast;
         }
 
         @Override
-        public void forEach(Consumer<? super T> action) {
-            Iterable.super.forEach(action);
-        }
-
-        @Override
-        public Spliterator<T> spliterator() {
-            return Iterable.super.spliterator();
+        public T next() {
+            T item = data[wizPos];
+            wizPos = utilFunction(wizPos + 1);
+            return item;
         }
     }
 
@@ -34,18 +39,20 @@ public class ArrayDeque<T> {
 
     private int size;
 
-    public int UtilFunction(int size) {
+    public int utilFunction(int size) {
         if (size < 0) {
-            return size + this.data.length;
+            return size + data.length;
         }
-        if (size >= this.data.length) {
-            return size - this.data.length;
+        if (size >= data.length) {
+            return size - data.length;
         }
         return size;
     }
 
     public ArrayDeque() {
-        /** cast, the way to create reference array */
+        /** cast, the way to create reference array,
+         * the starting size of array is 8
+         * */
         data = (T[]) new Object[8];
         size = 0;
         nextFirst = 0;
@@ -61,71 +68,83 @@ public class ArrayDeque<T> {
         }
     }
 
+    @Override
     public void addFirst(T item) {
         if (size == data.length) {
-            resize(size + 8);
+            resize(size * 2);
         }
-
         data[nextFirst] = item;
-        nextFirst = UtilFunction(nextFirst - 1);
+        nextFirst = utilFunction(nextFirst - 1);
+        size++;
+    }
+
+    @Override
+    public void addLast(T item) {
+        if (size == data.length) {
+            resize(size * 2);
+        }
+        data[nextLast] = item;
+        nextLast = utilFunction(nextLast + 1);
         size++;
     }
 
     /** Resizes the underlying array to the target capacity */
     public void resize(int capacity) {
-        T[] newArray = null;
-        if (capacity < 16) {
-            newArray = (T[]) new Object[capacity];  /**  change capacity */
-            System.arraycopy(data, 0, newArray, 0, size);
-            data = newArray;
-        }else if (size / (double)capacity < 0.25) {
-            int newCapacity = (int) (capacity * USER_FACTOR);
-            newArray = (T[]) new Object[newCapacity];
-            System.arraycopy(data, 0, newArray, 0, size);
-            data = newArray;
+        T[] newData = (T [])new Object[capacity];
+        int k = nextFirst + 1;
+        for (int i = 1; i <= size; i++) {
+            newData[i] = data[utilFunction(k)];
+            k++;
         }
+        nextFirst = 0;
+        nextLast = size + 1;
+        data = newData;
     }
 
-    public void addLast(T item) {
-        if (size == data.length) {
-            resize(size + 8);
-        }
-        data[nextLast] = item;
-        nextLast = UtilFunction(nextLast + 1);
+
+
+    @Override
+    public int size() {
+        return size;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
+    @Override
     public void printDeque() {
-        int i = nextFirst + 1;
+        int i = utilFunction(nextFirst + 1);
         while (i != nextLast) {
             System.out.println(data[i]);
-            i = UtilFunction(i - 1);
+            i = utilFunction(i + 1);
         }
     }
 
+    @Override
     public T removeFirst() {
-        nextFirst = UtilFunction(nextFirst + 1);
+        nextFirst = utilFunction(nextFirst + 1);
         T item = data[nextFirst];
         data[nextFirst] = null;
         size--;
-        resize(data.length);
+        if (size >= 16 && size < data.length * USER_FACTOR) {
+            resize((int) (data.length * USER_FACTOR));
+        }
         return item;
     }
 
+    @Override
     public T removeLast() {
-        nextLast = UtilFunction(nextLast - 1);
+        nextLast = utilFunction(nextLast - 1);
         T item = data[nextLast];
         data[nextLast] = null;
         size--;
-        resize(data.length);
+        if (size >= 16 && size < data.length * USER_FACTOR) {
+            resize((int) (data.length * USER_FACTOR));
+        }
         return item;
     }
 
+    @Override
     public T get(int index) {
-        return data[index];
+        int i = utilFunction(nextFirst + index + 1);
+        return data[i];
     }
 
 }
