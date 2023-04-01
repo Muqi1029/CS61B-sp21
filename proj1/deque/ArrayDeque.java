@@ -39,7 +39,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
     private int size;
 
-    public int utilFunction(int size) {
+    private int utilFunction(int size) {
         if (size < 0) {
             return size + data.length;
         }
@@ -119,6 +119,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
     @Override
     public T removeFirst() {
+        if (size == 0) {
+            return null;
+        }
         nextFirst = utilFunction(nextFirst + 1);
         T item = data[nextFirst];
         data[nextFirst] = null;
@@ -131,6 +134,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
     @Override
     public T removeLast() {
+        if (size == 0) {
+            return null;
+        }
         nextLast = utilFunction(nextLast - 1);
         T item = data[nextLast];
         data[nextLast] = null;
@@ -146,5 +152,6 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         int i = utilFunction(nextFirst + index + 1);
         return data[i];
     }
+
 
 }
