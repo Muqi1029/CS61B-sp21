@@ -17,6 +17,14 @@ public class TestBSTMap {
 	    	fail();
 	    }
     }
+    @Test
+    public void insertTest() {
+        BSTMap<String, Integer> b = new BSTMap<String, Integer>();
+        for (int i = 0; i < 5; i++) {
+            b.put("hi" + i, i);
+        }
+        b.printInOrder();
+    }
 
     //assumes put/size/containsKey/get work
     @Test
