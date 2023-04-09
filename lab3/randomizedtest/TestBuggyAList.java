@@ -2,13 +2,13 @@ package randomizedtest;
 
 import edu.princeton.cs.algs4.StdRandom;
 import org.junit.Test;
-
 import static org.junit.Assert.*;
 
 /**
  * Created by hug.
  */
 public class TestBuggyAList {
+
     @Test
     public void removeLastTest() {
         AListNoResizing<Integer> alist = new AListNoResizing<>();
@@ -119,4 +119,5 @@ public class TestBuggyAList {
 
     }
 }
+
 

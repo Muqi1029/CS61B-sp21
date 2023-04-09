@@ -1,11 +1,13 @@
 package gh2;
 
 // TODO: uncomment the following import once you're ready to start this portion
+
  import deque.ArrayDeque;
  import deque.Deque;
 
  import java.util.HashSet;
  import java.util.Set;
+
 // TODO: maybe more imports
 
 //Note: This file will not compile until you complete the Deque implementations
@@ -26,11 +28,13 @@ public class GuitarString {
         //       cast the result of this division operation into an int. For
         //       better accuracy, use the Math.round() function before casting.
         //       Your should initially fill your buffer array with zeros.
+
         buffer = new ArrayDeque<>();
         int capacity = (int) Math.round(SR / frequency);
         for (int i = 0; i < capacity; i++) {
             buffer.addLast(0.0);
         }
+
 
     }
 
@@ -45,6 +49,7 @@ public class GuitarString {
         //       other. This does not mean that you need to check that the numbers
         //       are different from each other. It means you should repeatedly call
         //       Math.random() - 0.5 to generate new random numbers for each array index.
+
 
         /** Dequeue everything in buffer */
         int size = buffer.size();
@@ -72,14 +77,18 @@ public class GuitarString {
         // TODO: Dequeue the front sample and enqueue a new sample that is
         //       the average of the two multiplied by the DECAY factor.
         //       **Do not call StdAudio.play().**
+
         Double aDouble = buffer.removeFirst();
         Double tDouble = buffer.get(0);
         buffer.addLast(DECAY * (aDouble + tDouble) / 2 );
+
     }
 
     /* Return the double at the front of the buffer. */
     public double sample() {
+
         return buffer.get(0);
     }
 }
+
 

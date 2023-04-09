@@ -16,6 +16,7 @@ public class LinkedListDequeTest {
 
 //        System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
 
+
         LinkedListDeque<String> lld1 = new LinkedListDeque<String>();
 
 		assertTrue("A newly initialized LLDeque should be empty", lld1.isEmpty());
@@ -34,14 +35,15 @@ public class LinkedListDequeTest {
 
 		System.out.println("Printing out deque: ");
 		lld1.printDeque();
-
     }
 
     @Test
     /** Adds an item, then removes an item, and ensures that dll is empty afterwards. */
     public void addRemoveTest() {
 
+
 //        System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
+
 
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
 		// should be empty
@@ -54,7 +56,6 @@ public class LinkedListDequeTest {
 		lld1.removeFirst();
 		// should be empty
 		assertTrue("lld1 should be empty after removal", lld1.isEmpty());
-
     }
 
     @Test
@@ -62,6 +63,7 @@ public class LinkedListDequeTest {
     public void removeEmptyTest() {
 
 //        System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
+
 
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<>();
         lld1.addFirst(3);
@@ -77,12 +79,13 @@ public class LinkedListDequeTest {
         errorMsg += "  actual size() returned 0\n";
 
         assertEquals(errorMsg, 0, size);
-
     }
 
     @Test
     /* Check if you can create LinkedListDeques with different parameterized types*/
     public void multipleParamTest() {
+
+
 
 
         LinkedListDeque<String>  lld1 = new LinkedListDeque<String>();
@@ -103,7 +106,9 @@ public class LinkedListDequeTest {
     /* check if null is return when removing from an empty LinkedListDeque. */
     public void emptyNullReturnTest() {
 
+
 //        System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
+
 
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
 
@@ -119,7 +124,9 @@ public class LinkedListDequeTest {
     /* Add large number of elements to deque; check if order is correct. */
     public void bigLLDequeTest() {
 
+
 //        System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
+
 
         LinkedListDeque<Integer> lld1 = new LinkedListDeque<Integer>();
         for (int i = 0; i < 1000000; i++) {
@@ -133,6 +140,7 @@ public class LinkedListDequeTest {
         for (double i = 999999; i > 500000; i--) {
             assertEquals("Should have the same value", i, (double) lld1.removeLast(), 0.0);
         }
+
     }
 
     @Test
@@ -145,5 +153,6 @@ public class LinkedListDequeTest {
         for (int item: linkedListDeque) {
             System.out.println(item);
         }
+
     }
 }

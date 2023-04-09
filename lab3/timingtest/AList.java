@@ -1,6 +1,5 @@
 package timingtest;
 
-import org.w3c.dom.html.HTMLImageElement;
 
 /** Array based list.
  *  @author Josh Hug
@@ -66,9 +65,11 @@ public class AList<Item> {
         return x;
     }
 
+
     public void of(Item ...args) {
         for (int i = 0; i < args.length; i++) {
             addLast(args[i]);
         }
     }
+
 }

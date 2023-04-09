@@ -1,12 +1,14 @@
 package timingtest;
 import edu.princeton.cs.algs4.Stopwatch;
 
-import java.lang.reflect.Array;
+
+
 
 /**
  * Created by hug.
  */
 public class TimeSLList {
+
 
     private static AList<Integer> aList = new AList<Integer>(); /** record the ops */
     private static AList<Double> doubleAList = new AList<Double>();/** record the time */
@@ -25,6 +27,7 @@ public class TimeSLList {
     }
 
     public static void main(String[] args) {
+
         aList.of(1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000);
         AList<Integer> alistM = new AList<>();
         for (int i = 0; i < aList.size(); i++) {
@@ -33,10 +36,12 @@ public class TimeSLList {
 
         timeGetLast();
         printTimingTable(aList, doubleAList, alistM);
+
     }
 
     public static void timeGetLast() {
         // TODO: YOUR CODE HERE
+
         int i = 0;
 
         while (i < aList.size()) {
@@ -63,6 +68,7 @@ public class TimeSLList {
             doubleAList.addLast(v);
 
         }
+
     }
 
 }
