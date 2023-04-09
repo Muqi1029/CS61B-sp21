@@ -1,5 +1,6 @@
 package bstmap;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.lang.Comparable;
@@ -13,7 +14,8 @@ import java.lang.Comparable;
 public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     private BSTNode root;
-    private int size;
+
+    HashSet<K> ks = new HashSet<>();
 
 
     /**
@@ -31,6 +33,12 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             this.value = value;
         }
 
+        public BSTNode(K key, V value, int i) {
+            this.key = key;
+            this.value = value;
+            this.size = i;
+        }
+
         @Override
         public String toString() {
             return "BSTNode{" +
@@ -43,7 +51,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     @Override
     public void clear() {
         root = null;
-        size = 0;
     }
 
     @Override
@@ -56,6 +63,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             return false;
         }
         int cmp = key.compareTo(node.key);
+
         if (cmp > 0) {
             return containsKey(node.right, key);
         }else if (cmp < 0) {
@@ -88,7 +96,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public int size() {
-        return size;
+        return size(root);
+    }
+
+    private int size(BSTNode node) {
+        if (node == null) {
+            return 0;
+        }
+        return node.size;
     }
 
     @Override
@@ -96,14 +111,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         if (key == null) {
             throw new IllegalArgumentException("key mustn't be null");
         }
+        ks.add(key);
         root = put(root, key, value);
     }
 
     private BSTNode put(BSTNode node, K key, V value) {
 
         if (node == null) {
-            size++;
-            return new BSTNode(key, value);
+            return new BSTNode(key, value, 1);
         }
 
         int cmp = key.compareTo(node.key);
@@ -115,14 +130,17 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         } else {
             node.value = value;
         }
+        node.size = size(node.left) + size(node.right) + 1;
         return node;
     }
 
 
     @Override
     public Set<K> keySet() {
-        throw new UnsupportedOperationException();
+        return ks;
     }
+
+
 
     /**
      * there are totally 3 situations about deletion
@@ -157,7 +175,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             return;
         }
         print(node.left);
-        System.out.println(node.toString());
+        System.out.println(node);
         print(node.right);
     }
 }
