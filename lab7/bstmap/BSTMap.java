@@ -15,7 +15,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     private BSTNode root;
 
-    HashSet<K> ks = new HashSet<>();
+    private HashSet<K> ks = new HashSet<>();
 
 
     /**
