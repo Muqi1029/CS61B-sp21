@@ -3,7 +3,7 @@ package deque;
 import java.util.Iterator;
 
 
-public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     @Override
     public Iterator<T> iterator() {
@@ -29,7 +29,8 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         }
     }
 
-    private final static double USER_FACTOR = 0.25;
+    private static final double USER_FACTOR = 0.25;
+    private static final int BASIC_SIZE = 16;
 
     private T[] data;
 
@@ -39,14 +40,14 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
     private int size;
 
-    private int utilFunction(int size) {
-        if (size < 0) {
-            return size + data.length;
+    private int utilFunction(int a) {
+        if (a < 0) {
+            return a + data.length;
         }
-        if (size >= data.length) {
-            return size - data.length;
+        if (a >= data.length) {
+            return a - data.length;
         }
-        return size;
+        return a;
     }
 
     public ArrayDeque() {
@@ -88,9 +89,11 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         size++;
     }
 
-    /** Resizes the underlying array to the target capacity */
-    public void resize(int capacity) {
-        T[] newData = (T [])new Object[capacity];
+    /**
+     * Resizes the underlying array to the target capacity
+     */
+    private void resize(int capacity) {
+        T[] newData = (T[]) new Object[capacity];
         int k = nextFirst + 1;
         for (int i = 1; i <= size; i++) {
             newData[i] = data[utilFunction(k)];
@@ -100,7 +103,6 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         nextLast = size + 1;
         data = newData;
     }
-
 
 
     @Override
@@ -126,7 +128,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         T item = data[nextFirst];
         data[nextFirst] = null;
         size--;
-        if (size >= 16 && size < data.length * USER_FACTOR) {
+        if (size >= BASIC_SIZE && size < data.length * USER_FACTOR) {
             resize((int) (data.length * USER_FACTOR));
         }
         return item;
@@ -141,7 +143,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         T item = data[nextLast];
         data[nextLast] = null;
         size--;
-        if (size >= 16 && size < data.length * USER_FACTOR) {
+        if (size >= BASIC_SIZE && size < data.length * USER_FACTOR) {
             resize((int) (data.length * USER_FACTOR));
         }
         return item;
@@ -151,6 +153,21 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
     public T get(int index) {
         int i = utilFunction(nextFirst + index + 1);
         return data[i];
+    }
+
+    public boolean equals(Object o) {
+        if (o instanceof ArrayDeque) {
+            o = (ArrayDeque) o;
+            if (((ArrayDeque<?>) o).size == size) {
+                for (int i = 0; i < size; i++) {
+                    if (!(((ArrayDeque<?>) o).get(i) == get(i))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
 
