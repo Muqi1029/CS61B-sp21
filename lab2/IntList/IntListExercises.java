@@ -82,7 +82,7 @@ public class IntListExercises {
         if (currElemIsPrime) {
             lst.first *= lst.first;
         }
-        
+
         /** record the last result */
         boolean res =  squarePrimes(lst.rest);
 
