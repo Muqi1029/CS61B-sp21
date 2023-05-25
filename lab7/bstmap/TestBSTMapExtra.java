@@ -89,7 +89,7 @@ public class TestBSTMapExtra {
         rightChild.put('A', 1);
         rightChild.put('B', 2);
         Integer result = (Integer) rightChild.remove('A');
-        assertTrue(result.equals(1));
+        assertEquals(1, (int) result);
         for (int i = 0; i < 10; i++) {
             rightChild.put((char) ('C'+i), 3+i);
         }
