@@ -35,6 +35,7 @@ public class Main {
                 /** java gitlet.Main rm [file name] */
                 validateArgs(args, 2);
                 Repository.rm(args[1]);
+                break;
             case "log":
                 validateArgs(args, 1);
                 Repository.log();

@@ -100,7 +100,7 @@ public class Repository {
      */
     public static void add(String fileName) {
 
-        operateInitial();
+        readInitial();
 
         // 1. find the file in CWD
         File file = join(CWD, fileName);
@@ -143,7 +143,7 @@ public class Repository {
      */
     public static void commit(String message) {
 
-        operateInitial();
+        readInitial();
 
         /** if no files have been staged, abort */
         if (stageMap.size() == 0) {
@@ -168,7 +168,7 @@ public class Repository {
             newMap.put(fileName, sha1);
             writeContents(join(BLOB_DIR, sha1), readContents(join(CWD, fileName)));
         }
-
+        commit.setMap(newMap);
 
         // 3. clear the staging area
         stageMap.clear();
@@ -192,9 +192,9 @@ public class Repository {
      * @param fileName the file name you want to remove
      */
     public static void rm(String fileName) {
-        operateInitial();
+        readInitial();
 
-        Map map = head.getMap();
+        Map<String, String> map = head.getMap();
         String sha1 = stageMap.getOrDefault(fileName, null);
 
         if (!map.containsKey(fileName) && !stageMap.containsKey(fileName)) {
@@ -224,7 +224,7 @@ public class Repository {
      * along the commit tree until the commit
      */
     public static void log() {
-        operateInitial();
+        readInitial();
         Commit commit = head;
         while (commit != null) {
             System.out.println("===");
@@ -239,7 +239,7 @@ public class Repository {
 
 
     /** ============================= private Utils ===========================*/
-    private static void operateInitial() {
+    private static void readInitial() {
         if (!GITLET_DIR.exists()) {
             System.out.println("Not in an initialized Gitlet directory.");
             System.exit(1);
