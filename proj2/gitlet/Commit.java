@@ -24,12 +24,14 @@ public class Commit implements Serializable {
     /** The message of this Commit. */
     private String message;
 
+    /** the parent of this commit */
     private Commit parent;
 
+    /** the time of commit */
     private Date timestamp;
 
+    /** metadata: the author of this commit  */
     private String author;
-
 
     /** map from fileName to sha-1 */
     private Map<String, String> map = new TreeMap<>();
@@ -38,9 +40,8 @@ public class Commit implements Serializable {
         this.author = author;
         this.parent = parent;
         this.message = message;
-        this.timestamp = new Date();
+        this.timestamp = new Date(0);
     }
-
 
     public String getMessage() {
         return message;
@@ -68,5 +69,17 @@ public class Commit implements Serializable {
 
     public void setMap(Map<String, String> map) {
         this.map = map;
+    }
+
+    /** get SHA-1 id, which must include the file references of its files, parent reference, log message, and commit time */
+    public String getId() {
+        StringBuilder valuesInBlob = new StringBuilder();
+        for (String value: map.values()) {
+            valuesInBlob.append(value);
+        }
+        if (parent == null) {
+            return Utils.sha1(message, timestamp.toString(), valuesInBlob.toString());
+        }
+        return Utils.sha1(message, parent.toString(), timestamp.toString(), valuesInBlob.toString());
     }
 }
