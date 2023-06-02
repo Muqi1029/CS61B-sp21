@@ -1,9 +1,6 @@
 package hashmap;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A hash table-backed Map implementation. Provides amortized constant time
@@ -14,100 +11,6 @@ import java.util.Set;
  * @author YOUR NAME HERE
  */
 public class MyHashMap<K, V> implements Map61B<K, V> {
-
-    @Override
-    public void clear() {
-        size = 0;
-    }
-
-    @Override
-    public boolean containsKey(K key) {
-        int i = key.hashCode();
-        for (Node node : buckets[i % size]) {
-            if (node.key.equals(key)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public V get(K key) {
-        if (key == null) {
-            throw new IllegalArgumentException("key can't be null");
-        }
-
-        if (containsKey(key)) {
-            int i = key.hashCode();
-            for (Node node :
-                    buckets[i % size]) {
-                if (key.equals(node.key)) {
-                    return node.value;
-                }
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public int size() {
-        return size;
-    }
-
-    @Override
-    public void put(K key, V value) {
-        
-    }
-
-    @Override
-    public Set<K> keySet() {
-        HashSet<K> ks = new HashSet<>();
-        for (int i = 0; i < size; i++) {
-            for (Node node : buckets[i]) {
-                ks.add(node.key);
-            }
-        }
-        return ks;
-    }
-
-    @Override
-    public V remove(K key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public V remove(K key, V value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterator<K> iterator() {
-        return new hashMapIterator();
-    }
-
-    private class hashMapIterator implements Iterator<K> {
-        private Set<K> keys;
-        private int pos;
-
-        private Iterator<K> iterator;
-
-        public hashMapIterator() {
-            keys = keySet();
-            iterator = keys.iterator();
-        }
-
-
-        @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public K next() {
-            return iterator.next();
-        }
-    }
-
     /**
      * Protected helper class to store key/value pairs
      * The protected qualifier allows subclass access
@@ -131,17 +34,24 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
     private double loadFactor = 0.75;
 
+    private final HashSet<K> ks = new HashSet<>();
 
     /**
      * Constructors
      */
     public MyHashMap() {
         buckets = new Collection[initialSize];
+        for (int i = 0; i < initialSize; i++) {
+            buckets[i] = createBucket();
+        }
     }
 
     public MyHashMap(int initialSize) {
         this.initialSize = initialSize;
-        buckets = new Collection[initialSize];
+        this.buckets = new Collection[initialSize];
+        for (int i = 0; i < initialSize; i++) {
+            this.buckets[i] = createBucket();
+        }
     }
 
     /**
@@ -155,13 +65,16 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         this.initialSize = initialSize;
         this.loadFactor = maxLoad;
         buckets = new Collection[initialSize];
+        for (int i = 0; i < initialSize; i++) {
+            buckets[i] = createBucket();
+        }
     }
 
     /**
      * Returns a new node to be placed in a hash table bucket
      */
     private Node createNode(K key, V value) {
-        return null;
+        return new Node(key, value);
     }
 
     /**
@@ -183,7 +96,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * OWN BUCKET DATA STRUCTURES WITH THE NEW OPERATOR!
      */
     protected Collection<Node> createBucket() {
-        return null;
+        return new LinkedList<>();
     }
 
     /**
@@ -199,4 +112,158 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return null;
     }
 
+    @Override
+    public void clear() {
+        size = 0;
+        ks.clear();
+        for (int i = 0; i < buckets.length; i++) {
+            buckets[i].clear();
+        }
+    }
+
+    /**
+     * -------------------- containsKey(key) -------------------------
+     */
+    @Override
+    public boolean containsKey(K key) {
+        int index = key.hashCode();
+        index = index < 0 ? -index : index;
+        for (Node node : buckets[index % initialSize]) {
+            if (node.key.equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ---------------------- get(key) -----------------------
+     */
+    @Override
+    public V get(K key) {
+        if (key == null) {
+            throw new IllegalArgumentException("key can't be null");
+        }
+        int index = key.hashCode();
+        index = index < 0 ? -index : index;
+
+        for (Node node :
+                buckets[index % initialSize]) {
+            if (key.equals(node.key)) {
+                return node.value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ----------------------- size() ------------------------
+     */
+    @Override
+    public int size() {
+        return size;
+    }
+
+    /**
+     * ---------------------- put(key, value) ---------------------
+     */
+    //TODO increase the size of your MyHashMap when the load factor exceeds the set loadFactor
+    // multiplicative increase
+    @Override
+    public void put(K key, V value) {
+
+        /** basic judge */
+        if (key == null) {
+            throw new IllegalArgumentException("Key is allowed to be null!");
+        }
+
+        /** 1. get index of buckets */
+        int index = key.hashCode() % initialSize;
+        index = index < 0 ? -index : index;
+
+        /** 2. search in the relevant bucket */
+        for (Node node : buckets[index]) {
+            if (key.equals(node.key)) {
+                node.value = value;
+                return;
+            }
+        }
+        /** 3. if there is no findings in the bucket, directly add the node into the bucket */
+        ks.add(key);
+        buckets[index].add(createNode(key, value));
+        size++;
+
+        if (size / (double) buckets.length > loadFactor) {
+            resizeCapacity(buckets.length * 2);
+        }
+    }
+
+    /** resize the capacity */
+    private void resizeCapacity(int size) {
+        Collection<Node>[] newBuckets = new Collection[size];
+        for (int i = 0; i < size; i++) {
+            newBuckets[i] = createBucket();
+        }
+
+        for (Collection<Node> bucket : buckets) {
+            for (Node node : bucket) {
+                int index = node.key.hashCode() % size;
+                index = index < 0 ? -index : index;
+                newBuckets[index].add(node);
+            }
+        }
+
+        buckets = newBuckets;
+    }
+
+    /**
+     * ------------------------ keySet() --------------------------
+     */
+    @Override
+    public Set<K> keySet() {
+        return ks;
+    }
+
+    /**
+     * ------------------------ remove() --------------------------
+     */
+    @Override
+    public V remove(K key) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public V remove(K key, V value) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * ---------------------- iterator() --------------------------
+     */
+    @Override
+    public Iterator<K> iterator() {
+        return new hashMapIterator();
+    }
+
+    private class hashMapIterator implements Iterator<K> {
+        private Set<K> keys;
+        private int pos;
+
+        private Iterator<K> iterator;
+
+        public hashMapIterator() {
+            keys = ks;
+            iterator = keys.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public K next() {
+            return iterator.next();
+        }
+    }
 }

@@ -1,0 +1,20 @@
+Insert Randomly
+                       1000         10000       100000
+ULLMap                 0.01         0.22        stack overflow
+MyHashMap              0.01         0.03        2.71
+Java built-in Map      0.00         0.01        0.06
+
+Insert in order
+                       1000         10000       100000
+ULLMap                 0.00         0.27        stack overflow
+MyHashMap              0.00         0.04        5.13
+Java built-in map      0.00         0.00        0.05
+
+
+Bucket types: Speed Test
+        1,000      10,000       100,000
+AL      0.00        0.02        3.65
+LL      0.00        0.02        4.51
+TS      0.01        0.03        4.39
+HS      0.00        0.03        5.81
+PQ      0.00        0.02        3.32
