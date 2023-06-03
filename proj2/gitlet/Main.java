@@ -9,11 +9,12 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         if (args.length == 0) {
+            /** If a user doesn't input any arguments */
             System.out.println("Please enter a command.");
             System.exit(0);
         }
+
         String firstArg = args[0];
 //        System.out.println("firstArg: " + firstArg);
         switch(firstArg) {
@@ -37,20 +38,46 @@ public class Main {
                 Repository.rm(args[1]);
                 break;
             case "log":
+                /** java gitlet.Main log */
                 validateArgs(args, 1);
                 Repository.log();
                 break;
+            case "global-log": // TODO
+                break;
+            case "find":
+                /** java gitlet.Main find [file name] */
+                validateArgs(args, 2);
+                Repository.find(args[1]);
+                break;
+            case "status":
+                /** java gitlet.Main status */
+                validateArgs(args, 1);
+                Repository.status();
+                break;
+            case "checkout":
+                validateArgs(args, 2, 4);
+                Repository.checkout(args);
+                break;
+            case "branch":
+                validateArgs(args, 2);
+                Repository.branch(args[1]);
+                break;
             default:
-                System.out.println("Incorrect operands.");
-            // TODO: FILL THE REST IN
+                /** If a user inputs a command that doesn't exist */
+                System.out.println("No command with that name exist.");
         }
     }
     private static void validateArgs(String[] args, int num) {
         if (args.length != num) {
-            System.out.println("the format of your input is wrong!");
+            System.out.println("Incorrect operands.");
             System.exit(0);
         }
-
+    }
+    private static void validateArgs(String[] args, int begin, int end) {
+        if (args.length < begin || args.length > end) {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+        }
     }
 
 }

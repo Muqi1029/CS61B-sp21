@@ -1,9 +1,7 @@
 package gitlet;
 
-// TODO: any imports you need here
-
 import java.io.Serializable;
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -28,6 +26,7 @@ public class Commit implements Serializable {
     private Commit parent;
 
     /** the time of commit */
+    //TODO format: 00:00:00 UTC, Thursday, 1 January 1970
     private Date timestamp;
 
     /** metadata: the author of this commit  */
@@ -36,11 +35,18 @@ public class Commit implements Serializable {
     /** map from fileName to sha-1 */
     private Map<String, String> map = new TreeMap<>();
 
-    public Commit(String author, String message, Commit parent) {
+    public Commit(String message, Commit parent, String author) {
         this.author = author;
         this.parent = parent;
         this.message = message;
-        this.timestamp = new Date(0);
+        this.timestamp = new Date();
+    }
+
+    public Commit(String message, Commit parent, Date timestamp, String author) {
+        this.message = message;
+        this.parent = parent;
+        this.timestamp = timestamp;
+        this.author = author;
     }
 
     public String getMessage() {
