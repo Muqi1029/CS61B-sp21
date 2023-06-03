@@ -380,7 +380,6 @@ public class Repository {
 
             Map<String, String> map = head.getMap();
             checkIsExist(map, args[2]);
-            stageMap.remove(args[2]);
         } else if (args.length == 4 && args[2].equals("--")) {
             /** java gitlet.Main checkout [commit id] -- [file name] */
             Commit commit = readObject(join(COMMIT_DIR, args[1]), Commit.class);
@@ -389,7 +388,6 @@ public class Repository {
                 System.exit(0);
             }
             checkIsExist(commit.getMap(), args[3]);
-            stageMap.remove(args[3]);
 
         } else if (args.length == 2) {
             /** java gitlet.Main checkout [branch name] */
@@ -404,10 +402,21 @@ public class Repository {
                     //TODO checkout
                     branchList.remove(i);
                     branchList.add(0, branch); // add the head of the branch
+
                     Commit commit = branch.getCommit();
+                    head = commit;
+
                     Map<String, String> map = commit.getMap();
-                    //TODO delete
-                    for (String filename: map.keySet()) {
+
+                    // delete
+                    for (File file: CWD.listFiles()) {
+                        if (file.isFile() && file.getName().equals("hello.txt")) {
+                            file.delete();
+                        }
+                    }
+
+                    // put the files in the commit at the head of the given branch in the working directory
+                    for (String filename : map.keySet()) {
                         File file = join(BLOB_DIR, map.get(filename));
                         writeContents(join(CWD, filename), file);
                     }
@@ -417,6 +426,8 @@ public class Repository {
             // doesn't have the branch name
             System.out.println("No such branch exists.");
         }
+        // persistence
+        writeInitial();
     }
 
     private static void checkIsExist(Map<String, String> map, String filename) {
@@ -425,14 +436,24 @@ public class Repository {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         } else {
+            /** 1. overwrite the file */
+            // get the filename in the stage area
             String sha1 = map.get(filename);
-            File file = join(BLOB_DIR, sha1); // obtain the file
+            // obtain the file
+            File file = join(BLOB_DIR, sha1);
             writeContents(join(CWD, filename), file);
+
+            /** 2. clear the stage with respect to the new version */
+            String sha1name = stageMap.get(filename);
+            stageMap.remove(filename);
+            join(STAGE_DIR, sha1name).delete();
         }
     }
 
 
-    /** ======================= branch ============================== */
+    /**
+     * ======================= branch ==============================
+     */
 
     public static void branch(String branchName) {
         readInitial();
@@ -448,7 +469,9 @@ public class Repository {
         writeInitial();
     }
 
-    /** =================== rm-branch =========================== */
+    /**
+     * =================== rm-branch ===========================
+     */
     public static void rm_branch(String branchName) {
         readInitial();
 
@@ -470,7 +493,9 @@ public class Repository {
     }
 
 
-    /** ========================= reset =============================== */
+    /**
+     * ========================= reset ===============================
+     */
     public static void reset(String commitId) {
         readInitial();
 
@@ -484,20 +509,20 @@ public class Repository {
         Map<String, String> map = commit.getMap();
 
         // Removes tracked files that are not present in that commit.
-        for (File file: CWD.listFiles()) {
+        for (File file : CWD.listFiles()) {
             if (!map.containsKey(file)) {
                 file.delete();
             }
         }
 
         // write
-        for (String filename: map.keySet()) {
+        for (String filename : map.keySet()) {
             writeContents(join(CWD, filename), join(BLOB_DIR, map.get(filename)));
         }
 
         // The staging area is cleared.
         stageMap.clear();
-        for (File file: STAGE_MAP.listFiles()) {
+        for (File file : STAGE_MAP.listFiles()) {
             file.delete();
         }
 
