@@ -126,8 +126,15 @@ public class Repository {
         /** give the initial commitment */
         head = new Commit("initial commit", null, new Date(0), author);
         branchList.add(new Branch("master", head));
+
+        // commit
+        writeObject(join(COMMIT_DIR, head.getId()), head);
+        // head
         writeObject(join(GITLET_DIR, "head"), head);
+        // stageMap
         writeObject(STAGE_MAP, (Serializable) stageMap);
+        // branchList
+        writeObject(BRANCH, (Serializable) branchList);
     }
 
     /**
@@ -219,6 +226,10 @@ public class Repository {
         // 4. write this commit object into commit directory
         writeObject(join(COMMIT_DIR, commit.getId()), commit);
 
+        /** test code */
+//        System.out.println("commit" + commit);
+//        System.out.println();
+
         // 5. set head to the new commit
         head = commit;
         Branch branch = branchList.get(0);
@@ -266,10 +277,12 @@ public class Repository {
      */
     public static void log() {
         readInitial();
+
         Commit commit = head;
         Formatter formatter = new Formatter();
         while (commit != null) {
             System.out.println("===");
+//            System.out.println("log :" + commit);
             System.out.println("commit " + commit.getId());
             //TODO: merge information
 
@@ -409,7 +422,7 @@ public class Repository {
                     Map<String, String> map = commit.getMap();
 
                     // delete
-                    for (File file: CWD.listFiles()) {
+                    for (File file : CWD.listFiles()) {
                         if (file.isFile() && file.getName().equals("hello.txt")) {
                             file.delete();
                         }
@@ -441,12 +454,17 @@ public class Repository {
             String sha1 = map.get(filename);
             // obtain the file
             File file = join(BLOB_DIR, sha1);
-            writeContents(join(CWD, filename), file);
+            writeContents(join(CWD, filename), readContents(file));
 
             /** 2. clear the stage with respect to the new version */
             String sha1name = stageMap.get(filename);
-            stageMap.remove(filename);
-            join(STAGE_DIR, sha1name).delete();
+            if (sha1name != null) {
+                // if the filename is in stage area, unstage the file
+                stageMap.remove(filename);
+                if (join(STAGE_DIR, sha1name).exists()) {
+                    join(STAGE_DIR, sha1name).delete();
+                }
+            }
         }
     }
 
@@ -540,7 +558,7 @@ public class Repository {
             /** If a user inputs a command that requires being in an initialized Gitlet working directory,
              * but is not in such a directory, print this error message. */
             System.out.println("Not in an initialized Gitlet directory.");
-            System.exit(1);
+            System.exit(0);
         }
         head = readObject(HEAD, Commit.class);
         stageMap = readObject(STAGE_MAP, TreeMap.class);
@@ -549,6 +567,9 @@ public class Repository {
 
     private static void writeInitial() {
         writeObject(HEAD, head); // the current commit
+
+//        System.out.println("writeInitial" + head);
+
         writeObject(STAGE_MAP, (Serializable) stageMap); // the map used to store the all information of stage area
         writeObject(BRANCH, (Serializable) branchList); // the branch list
     }
