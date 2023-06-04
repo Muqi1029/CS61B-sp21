@@ -234,6 +234,7 @@ public class Repository {
         head = commit;
         Branch branch = branchList.get(0);
         branch.setCommit(head);
+        branchList.set(0, branch);
 
         writeInitial();
     }
@@ -381,7 +382,7 @@ public class Repository {
         }
     }
 
-
+/** ----------------------- checkout -------------------------- */
     public static void checkout(String[] args) {
         readInitial();
 
@@ -404,15 +405,14 @@ public class Repository {
 
         } else if (args.length == 2) {
             /** java gitlet.Main checkout [branch name] */
-
-            for (int i = 0; i < branchList.size(); i++) {
+            int i;
+            for (i = 0; i < branchList.size(); i++) {
                 Branch branch = branchList.get(i);
                 if (i == 0 && branch.getName().equals(args[1])) {
                     // if that branch is the current branch
                     System.out.println("No need to checkout the current branch.");
                     System.exit(0);
                 } else if (branch.getName().equals(args[1])) {
-                    //TODO checkout
                     branchList.remove(i);
                     branchList.add(0, branch); // add the head of the branch
 
@@ -423,21 +423,25 @@ public class Repository {
 
                     // delete
                     for (File file : CWD.listFiles()) {
-                        if (file.isFile() && file.getName().equals("hello.txt")) {
-                            file.delete();
+                        if (file.isFile()){
+                            /** !DANGEROUS */
+//                            file.delete();
                         }
                     }
 
                     // put the files in the commit at the head of the given branch in the working directory
                     for (String filename : map.keySet()) {
                         File file = join(BLOB_DIR, map.get(filename));
-                        writeContents(join(CWD, filename), file);
+                        writeContents(join(CWD, filename), readContents(file));
                     }
                     stageMap.clear();
+                    break;
                 }
             }
-            // doesn't have the branch name
-            System.out.println("No such branch exists.");
+            if (i == branchList.size()) {
+                // doesn't have the branch name
+                System.out.println("No such branch exists.");
+            }
         }
         // persistence
         writeInitial();

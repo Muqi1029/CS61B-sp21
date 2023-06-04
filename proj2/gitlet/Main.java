@@ -62,6 +62,10 @@ public class Main {
                 validateArgs(args, 2);
                 Repository.branch(args[1]);
                 break;
+            case "rm-branch":
+                validateArgs(args, 2);
+                Repository.rm_branch(args[1]);
+                break;
             default:
                 /** If a user inputs a command that doesn't exist */
                 System.out.println("No command with that name exist.");
