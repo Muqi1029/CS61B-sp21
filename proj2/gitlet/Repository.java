@@ -56,6 +56,7 @@ public class Repository {
      */
     public static final File STAGE_REMOVAL = join(STAGE_DIR, "removal");
 
+    /** record file removed from the gitlet */
     private static List<String> removalFileList = new ArrayList<>();
 
     /**
@@ -123,24 +124,28 @@ public class Repository {
             System.out.println("Failed to mkdir .gitlet/blob");
         }
 
-        /** give the initial commitment */
+        /** make the initial commit */
+        //TODO: the format of timestamp
         head = new Commit("initial commit", null, new Date(0), author);
         branchList.add(new Branch("master", head));
 
         // commit
         writeObject(join(COMMIT_DIR, head.getId()), head);
         // head
-        writeObject(join(GITLET_DIR, "head"), head);
+        writeObject(HEAD, head);
         // stageMap
         writeObject(STAGE_MAP, (Serializable) stageMap);
         // branchList
         writeObject(BRANCH, (Serializable) branchList);
+        // removalList
+        writeObject(STAGE_REMOVAL, (Serializable) removalFileList);
     }
 
     /**
-     * TODO: add a copy of the file as it currently exists to the staging area
-     * TODO: if staging a already-staged file, overwrite the previous version
-     * TODO: if the file to be staged is identical to current commit Version, don't stage and remove it if it exists in stage area
+     * 1. add a copy of the file as it currently exists to the staging area
+     * 2. if staging an already-staged file, overwrite the previous version
+     * 3. if the file to be staged is identical to current commit Version,
+     * don't stage and remove it if it exists in stage area
      *
      * @param fileName the fileName in current working directory
      */
@@ -174,19 +179,18 @@ public class Repository {
                 join(STAGE_DIR, previousVersion).delete();
             }
         }
-        writeInitial();
-
         // if these two versions are identical, do nothing
+        writeEnd();
     }
 
     /**
-     * TODO: only update the contents of files in the stage area
-     *  TODO: saves a snapshot of tracked files in the current commit and staging area
-     *  TODO: the staging area is cleared after a commit
+     * 1. only update the contents of files in the stage area
+     * 2. saves a snapshot of tracked files in the current commit and staging area
+     * 3. the staging area is cleared after a commit
      *
      * @param message the commit message
      */
-    public static void commit(String message) {
+    public static void commit(String message, Commit secondParent) {
 
         readInitial();
 
@@ -204,6 +208,9 @@ public class Repository {
 
         // 1. create a commit object whose parent is head
         Commit commit = new Commit(message, head, author);
+        if (secondParent != null) {
+            commit.setSecondParent(secondParent);
+        }
 
         Map<String, String> newMap = new TreeMap<>(head.getMap());
 
@@ -212,6 +219,10 @@ public class Repository {
             String sha1 = stageMap.get(fileName);
             newMap.put(fileName, sha1);
             writeContents(join(BLOB_DIR, sha1), readContents(join(CWD, fileName)));
+        }
+        /** remove the file in gitlet */
+        for (String removedName : removalFileList) {
+            newMap.remove(removedName);
         }
         commit.setMap(newMap);
 
@@ -222,6 +233,7 @@ public class Repository {
                 file.delete();
             }
         }
+        removalFileList.clear();
 
         // 4. write this commit object into commit directory
         writeObject(join(COMMIT_DIR, commit.getId()), commit);
@@ -234,9 +246,8 @@ public class Repository {
         head = commit;
         Branch branch = branchList.get(0);
         branch.setCommit(head);
-        branchList.set(0, branch);
 
-        writeInitial();
+        writeEnd();
     }
 
     /**
@@ -246,30 +257,29 @@ public class Repository {
         readInitial();
 
         Map<String, String> map = head.getMap();
-        String sha1 = stageMap.getOrDefault(fileName, null);
+        String currentVersion = stageMap.getOrDefault(fileName, null);
 
         if (!map.containsKey(fileName) && !stageMap.containsKey(fileName)) {
-            /** if the file is neither staged nor tracked by the head commit, print the error message */
+            /** if the file is neither staged nor tracked by the head commit,
+             *  print the error message */
             System.out.println("No reason to remove the file.");
             System.exit(0);
         }
 
         // unstage the file if it is currently staged for addition
-        if (sha1 != null) {
+        if (currentVersion != null) {
             stageMap.remove(fileName);
-            join(STAGE_DIR, sha1).delete();
-
+            join(STAGE_DIR, currentVersion).delete();
         }
 
         // if the file is tracked in the current commit, stage it for removal and remove the file from the working directory
         // stage it for removal
         if (map.containsKey(fileName)) {
-            map.remove(fileName);
             join(CWD, fileName).delete();
             removalFileList.add(fileName);
         }
 
-        writeInitial();
+        writeEnd();
     }
 
     /**
@@ -282,25 +292,40 @@ public class Repository {
         Commit commit = head;
         Formatter formatter = new Formatter();
         while (commit != null) {
-            System.out.println("===");
-//            System.out.println("log :" + commit);
-            System.out.println("commit " + commit.getId());
-            //TODO: merge information
-
-            formatter.format("%1$ta %1$tb %1$td %1$tT %1$tY %1$tZ", commit.getTimestamp());
-            String formattedDate = formatter.toString();
-            System.out.println("Date " + formattedDate);
-
-            System.out.println(commit.getMessage());
-            System.out.println();
+            printInformation(commit);
             commit = commit.getParent();
         }
     }
 
 
-    private static void global_log() {
-        //TODO: global-log
+    public static void global_log() {
+        for (String fileName :
+                Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
+            Commit commit = readObject(join(COMMIT_DIR, fileName), Commit.class);
+            printInformation(commit);
+        }
     }
+
+    private static void printInformation(Commit commit) {
+
+        Formatter formatter = new Formatter();
+
+        System.out.println("===");
+//       System.out.println("log :" + commit); // used for testing
+        System.out.println("commit " + commit.getId());
+
+        if (commit.getSecondParent() != null) {
+            System.out.printf("Merge: %.7s %.7s", commit.getParent().getId(), commit.getSecondParent().getId());
+        }
+
+        formatter.format("%1$ta %1$tb %1$td %1$tT %1$tY %1$tZ", commit.getTimestamp());
+        String formattedDate = formatter.toString();
+        System.out.println("Date " + formattedDate);
+
+        System.out.println(commit.getMessage());
+        System.out.println();
+    }
+
 
     /**
      * prints out the ids of all commits that have the given commit message
@@ -311,13 +336,13 @@ public class Repository {
         readInitial();
 
         boolean flag = false;
-        Commit commit = head;
-        while (commit != null) {
+        for (String name :
+                Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
+            Commit commit = readObject(join(COMMIT_DIR, name), Commit.class);
             if (commit.getMessage().equals(message)) {
                 System.out.println(commit.getId());
                 flag = true;
             }
-            commit = commit.getParent();
         }
         if (!flag) {
             /** if no such commit exists, prints the error message */
@@ -325,6 +350,9 @@ public class Repository {
         }
     }
 
+    /**
+     * -------------------- status -------------------------
+     */
     public static void status() {
         readInitial();
 
@@ -343,7 +371,7 @@ public class Repository {
         }
         System.out.println();
 
-        System.out.println("Removed Files");
+        System.out.println("=== Removed Files ===");
         for (String name : removalFileList) {
             System.out.println(name);
         }
@@ -354,6 +382,7 @@ public class Repository {
         // or Staged for addition, but with different contents than in the working directory;
         // or Staged for addition, but deleted in the working directory;
         // or Not staged for removal, but tracked in the current commit and deleted from the working directory.
+
         System.out.println();
 
         System.out.println("=== Untracked Files ===");
@@ -374,7 +403,7 @@ public class Repository {
                 String name = sha1(readContents(file));
                 File inBlob = join(BLOB_DIR, name);
                 File inStage = join(STAGE_DIR, name);
-                if (!inBlob.exists() || !inStage.exists()) {
+                if (!inBlob.exists() && !inStage.exists()) {
 //                    System.out.println(file.getName());
                     untrackedFiles.add(file.getName());
                 }
@@ -382,7 +411,9 @@ public class Repository {
         }
     }
 
-/** ----------------------- checkout -------------------------- */
+    /**
+     * ----------------------- checkout --------------------------
+     */
     public static void checkout(String[] args) {
         readInitial();
 
@@ -423,7 +454,7 @@ public class Repository {
 
                     // delete
                     for (File file : CWD.listFiles()) {
-                        if (file.isFile()){
+                        if (file.isFile()) {
                             /** !DANGEROUS */
 //                            file.delete();
                         }
@@ -435,6 +466,7 @@ public class Repository {
                         writeContents(join(CWD, filename), readContents(file));
                     }
                     stageMap.clear();
+                    removalFileList.clear();
                     break;
                 }
             }
@@ -444,7 +476,7 @@ public class Repository {
             }
         }
         // persistence
-        writeInitial();
+        writeEnd();
     }
 
     private static void checkIsExist(Map<String, String> map, String filename) {
@@ -461,13 +493,11 @@ public class Repository {
             writeContents(join(CWD, filename), readContents(file));
 
             /** 2. clear the stage with respect to the new version */
-            String sha1name = stageMap.get(filename);
+            String sha1name = stageMap.getOrDefault(filename, null);
             if (sha1name != null) {
                 // if the filename is in stage area, unstage the file
                 stageMap.remove(filename);
-                if (join(STAGE_DIR, sha1name).exists()) {
-                    join(STAGE_DIR, sha1name).delete();
-                }
+                join(STAGE_DIR, sha1name).delete();
             }
         }
     }
@@ -488,7 +518,7 @@ public class Repository {
         }
         Branch branch = new Branch(branchName, head);
         branchList.add(branch);
-        writeInitial();
+        writeEnd();
     }
 
     /**
@@ -511,17 +541,22 @@ public class Repository {
         if (flag) {
             System.out.println("A branch with that name does not exist.");
         }
-        writeInitial();
+        writeEnd();
     }
 
 
     /**
      * ========================= reset ===============================
+     * Checks out all the files tracked by the given commit
+     * Removes tracked files that are not present in that commit
+     * move the current branch's head to that commit node
+     * <p>
+     * The staging area is cleared
      */
     public static void reset(String commitId) {
         readInitial();
 
-        // if
+        // find the commit
         Commit commit = readObject(join(COMMIT_DIR, commitId), Commit.class);
         if (commit == null) {
             System.out.println("No commit with that id exists.");
@@ -533,13 +568,14 @@ public class Repository {
         // Removes tracked files that are not present in that commit.
         for (File file : CWD.listFiles()) {
             if (!map.containsKey(file)) {
-                file.delete();
+                // !DANGEROUS
+//                file.delete();
             }
         }
 
         // write
         for (String filename : map.keySet()) {
-            writeContents(join(CWD, filename), join(BLOB_DIR, map.get(filename)));
+            writeContents(join(CWD, filename), readContents(join(BLOB_DIR, map.get(filename))));
         }
 
         // The staging area is cleared.
@@ -547,11 +583,194 @@ public class Repository {
         for (File file : STAGE_MAP.listFiles()) {
             file.delete();
         }
+        removalFileList.clear();
 
         // moves the current branch’s head to that commit node
         head = commit;
+        Branch branch = branchList.get(0);
+        branch.setCommit(head);
 
-        writeInitial();
+        writeEnd();
+    }
+
+    /**
+     * == MERGE files from the given branch into the current branch
+     * if the split point is the same commit as the given branch, then we do nothing ("Given branch is an ancestor of the current branch")
+     * if the split point is the current branch, then the effect is to check out the given branch ("Current branch fast-forward.")
+     * else (the more common situation):
+     * 1. MODIFIED in OTHER but not HEAD -> OTHER
+     * 2. MODIFIED in HEAD but not OTHER -> HEAD
+     * 3. MODIFIED in BOTH:
+     *      if changed in the same way(either deleted or changed): -> HEAD
+     *      if changed in the different way: -> CONFLICT
+     * 4. NOT in SPLIT nor OTHER but in HEAD -> HEAD
+     * 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
+     * 6. UNMODIFIED in HEAD and PRESENT in SPLIT but NOT in OTHER -> REMOVE
+     * 7. UNMODIFIED in OTHER and PRESENT in SPLIT but NOT in HEAD -> STAY ABSENT
+     */
+    public static void merge(String branchName) {
+        readInitial();
+
+        boolean isConflict = false;
+
+        // check whether there are staged additions or removals present
+        if (stageMap.size() == 0 && removalFileList.size() == 0) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+
+        if (branchList.get(0).getName().equals(branchName)) {
+            System.out.println("Cannot merge a branch with itself");
+            System.exit(0);
+        }
+
+        // check whether the branch exists
+        Branch other = null;
+        boolean isFind = false;
+        for (Branch branch : branchList) {
+            if (branch.getName().equals(branchName)) {
+                isFind = true;
+                other = branch;
+            }
+        }
+        if (!isFind) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+
+        // find the split Commit
+        Commit split = findCommonAncestor(head, other.getCommit());
+        if (split == null) {
+            System.out.println("These two branches don't have a common ancestor");
+            System.exit(0);
+        }
+
+        if (split.equals(other.getCommit())) {
+            /** If the split point is the same commit as the given branch,
+             *  then we do nothing; the merge is complete,
+             *  and the operation ends with the message */
+            System.out.println("Given branch is an ancestor of the current branch.");
+            System.exit(0);
+        }else if (split.equals(head)) {
+            /** If the split point is the current branch,
+             * then the effect is to check out the given branch,
+             * and the operation ends after printing the message  */
+            checkout(new String[] {"checkout", other.getName()});
+            System.out.println("Current branch fast-forwarded.");
+            System.exit(0);
+        }
+
+
+        Map<String, String> splitMap = split.getMap();
+        Map<String, String> headMap = head.getMap();
+        Map<String, String> otherMap = other.getCommit().getMap();
+
+        /** traverse in split Commit */
+        for (String fileName : splitMap.keySet()) {
+            String splitVersion = splitMap.get(fileName);
+            String headVersion = headMap.getOrDefault(fileName, null);
+            String otherVersion = otherMap.getOrDefault(fileName, null);
+
+            /** modify */
+            if (headVersion != null && otherVersion != null) {
+                if (!splitVersion.equals(otherVersion) && splitVersion.equals(headVersion)) {
+                    writeContents(join(CWD, fileName), readContents(join(BLOB_DIR, otherVersion)));
+                    putStage(fileName, join(CWD, fileName));
+                }
+            }
+
+            /**
+             * Conflict 1
+             * */
+            if (headVersion == null && otherVersion != null && !splitVersion.equals(otherVersion)) {
+                File file = join(BLOB_DIR, otherVersion);
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n=======\n", readContents(file), "\n>>>>>>>");
+                putStage(fileName, file);
+                isConflict = true;
+            }
+
+            /** conflict 2 */
+            if (otherVersion == null && headVersion != null && !headVersion.equals(splitVersion)) {
+                File file = join(BLOB_DIR, headVersion);
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(join(file)), "\n=======\n>>>>>>>");
+                putStage(fileName, file);
+                isConflict = true;
+            }
+
+            /**
+             * conflict 3
+             */
+            if (headVersion != null && otherVersion != null && !headVersion.equals(otherVersion)) {
+                File file1 = join(BLOB_DIR, headVersion);
+                File file2 = join(BLOB_DIR, otherVersion);
+
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
+                        "=======\n", readContents(file2), "\n>>>>>>>");
+                putStage(fileName, join(CWD, fileName));
+                isConflict = true;
+            }
+
+            /**
+             * delete 1
+             */
+            if (otherVersion == null && headVersion != null && headVersion.equals(splitVersion)) {
+                join(CWD, fileName).delete();
+                removalFileList.add(fileName);
+            }
+        }
+
+        /** up here we have solved the files in the split */
+
+        //TODO 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
+        for (String fileName: otherMap.keySet()) {
+            if (!splitMap.containsKey(fileName)) {
+                String otherVersion = otherMap.get(fileName);
+                String headVersion = headMap.getOrDefault(fileName, null);
+                if (headVersion == null) {
+                    /** change */
+                    File file = join(BLOB_DIR, fileName);
+                    writeContents(join(CWD, fileName), readContents(file));
+                    putStage(fileName, join(CWD, fileName));
+                } else if (!headVersion.equals(otherVersion)) {
+                    /** Conflict 4 */
+                    File file1 = join(BLOB_DIR, headVersion);
+                    File file2 = join(BLOB_DIR, otherVersion);
+                    writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
+                            "=======\n", readContents(file2), "\n>>>>>>>");
+                    putStage(fileName, join(CWD, fileName));
+                    isConflict = true;
+                }
+            }
+        }
+
+        if (!isConflict) {
+            commit("Merged " + branchName + " into " + branchList.get(0).getName(), other.getCommit());
+        } else {
+            System.out.println("Encountered a merge conflict.");
+            writeEnd();
+        }
+    }
+
+    private static void putStage(String fileName, File file) {
+        String shaName = sha1(readContents(file));
+        stageMap.put(fileName, shaName);
+        writeContents(join(STAGE_DIR, shaName), readContents(file));
+    }
+
+    private static Commit findCommonAncestor(Commit commit1, Commit commit2) {
+        HashSet<Commit> ancestors = new HashSet<>();
+        while (commit1 != null) {
+            ancestors.add(commit1);
+            commit1 = commit1.getParent();
+        }
+
+        while (commit2 != null) {
+            if (ancestors.contains(commit2)) {
+                return commit2;
+            }
+            commit2 = commit2.getParent();
+        }
+        return null;
     }
 
     /**
@@ -564,17 +783,20 @@ public class Repository {
             System.out.println("Not in an initialized Gitlet directory.");
             System.exit(0);
         }
+
+        removalFileList = readObject(STAGE_REMOVAL, ArrayList.class);
         head = readObject(HEAD, Commit.class);
         stageMap = readObject(STAGE_MAP, TreeMap.class);
         branchList = readObject(BRANCH, ArrayList.class);
     }
 
-    private static void writeInitial() {
+    private static void writeEnd() {
         writeObject(HEAD, head); // the current commit
 
 //        System.out.println("writeInitial" + head);
 
         writeObject(STAGE_MAP, (Serializable) stageMap); // the map used to store the all information of stage area
         writeObject(BRANCH, (Serializable) branchList); // the branch list
+        writeObject(STAGE_REMOVAL, (Serializable) removalFileList); //
     }
 }

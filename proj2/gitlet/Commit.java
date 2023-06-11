@@ -39,6 +39,12 @@ public class Commit implements Serializable {
      */
     private Map<String, String> map = new TreeMap<>();
 
+
+    /**
+     * used to record the second parent when merged
+     */
+    private Commit secondParent;
+
     public Commit(String message, Commit parent, String author) {
         this.author = author;
         this.parent = parent;
@@ -85,12 +91,27 @@ public class Commit implements Serializable {
         for (String value : map.values()) {
             valuesInBlob.append(value);
         }
-        if (parent == null) {
+        if (parent == null && secondParent == null) {
             return Utils.sha1(message, timestamp.toString(), valuesInBlob.toString());
+        }else if (parent != null && secondParent == null) {
+            return Utils.sha1(message, parent.toString(), timestamp.toString(), valuesInBlob.toString());
+        }else if (parent != null && secondParent != null) {
+            return Utils.sha1(message, parent.toString(), secondParent.toString(), timestamp.toString(), valuesInBlob.toString());
         }
-        return Utils.sha1(message, parent.toString(), timestamp.toString(), valuesInBlob.toString());
+        return null;
     }
 
+    public Commit getSecondParent() {
+        return secondParent;
+    }
+
+    public void setSecondParent(Commit secondParent) {
+        this.secondParent = secondParent;
+    }
+
+    /**
+     * used to debug
+     */
     @Override
     public String toString() {
         return "Commit{" +
@@ -99,6 +120,7 @@ public class Commit implements Serializable {
                 ", timestamp=" + timestamp +
                 ", author='" + author + '\'' +
                 ", map=" + map +
+                ", secondParent=" + secondParent +
                 '}';
     }
 }
