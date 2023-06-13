@@ -13,13 +13,14 @@ JFLAGS = -ea
 # See comment in ../Makefile
 PYTHON = python
 
-RMAKE = "$(MAKE)"
+RMAKE = "$(MAKE)" # make file
 
+# invoke python script
 TESTER = CLASSPATH="$$(pwd)/..:$(CLASSPATH):;$$(pwd)/..;$(CLASSPATH)" $(PYTHON) tester.py
 
 TESTER_FLAGS =
 
-TESTS = samples/*.in student_tests/*.in *.in
+TESTS = samples/*.in student_tests/*.in *.in # test files
 
 .PHONY: default check clean std
 

@@ -57,7 +57,9 @@ public class Repository {
      */
     public static final File STAGE_REMOVAL = join(STAGE_DIR, "removal");
 
-    /** record file removed from the gitlet */
+    /**
+     * record file removed from the gitlet
+     */
     private static List<String> removalFileList = new ArrayList<>();
 
     /**
@@ -87,7 +89,7 @@ public class Repository {
     /**
      * used to store the whole commit operations
      */
-    private static List<Branch> branchList = new ArrayList<>();
+    private static List<Branch> branchList = new LinkedList<>();
 
     private static final File BRANCH = join(GITLET_DIR, "branch");
 
@@ -126,7 +128,6 @@ public class Repository {
         }
 
         /** make the initial commit */
-        //TODO: the format of timestamp
         head = new Commit("initial commit", null, new Date(0), author);
         branchList.add(new Branch("master", head));
 
@@ -196,7 +197,7 @@ public class Repository {
         readInitial();
 
         /** if no files have been staged, abort */
-        if (stageMap.size() == 0) {
+        if (stageMap.size() == 0 && removalFileList.isEmpty()) {
             System.out.println("No changes added to the commit");
             System.exit(0);
         }
@@ -221,7 +222,8 @@ public class Repository {
             newMap.put(fileName, sha1);
             writeContents(join(BLOB_DIR, sha1), readContents(join(CWD, fileName)));
         }
-        /** remove the file in gitlet */
+
+        /** remove the file in gitlet depending on the rm operation */
         for (String removedName : removalFileList) {
             newMap.remove(removedName);
         }
@@ -273,13 +275,13 @@ public class Repository {
             join(STAGE_DIR, currentVersion).delete();
         }
 
-        // if the file is tracked in the current commit, stage it for removal and remove the file from the working directory
-        // stage it for removal
+        // if the file is tracked in the current commit, stage it for removal
+        // and remove the file from the working directory
         if (map.containsKey(fileName)) {
+            /** don't remove the file unless it is tracked in the current commit */
             join(CWD, fileName).delete();
             removalFileList.add(fileName);
         }
-
         writeEnd();
     }
 
@@ -297,7 +299,12 @@ public class Repository {
     }
 
 
+    /**
+     * Like log, except displays information about all commits ever made
+     * The order of the commits does not matter
+     */
     public static void global_log() {
+        /** iterate over files within the COMMIT_DIR */
         for (String fileName :
                 Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
             Commit commit = readObject(join(COMMIT_DIR, fileName), Commit.class);
@@ -313,6 +320,7 @@ public class Repository {
 
         if (commit.getSecondParent() != null) {
             System.out.printf("Merge: %.7s %.7s", commit.getParent().getId(), commit.getSecondParent().getId());
+            System.out.println();
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyy Z", Locale.ENGLISH);
@@ -374,6 +382,7 @@ public class Repository {
         System.out.println();
 
         System.out.println("=== Modifications Not Staged For Commit ===");
+
         //TODO: Tracked in the current commit, changed in the working directory, but not staged;
         // or Staged for addition, but with different contents than in the working directory;
         // or Staged for addition, but deleted in the working directory;
@@ -389,17 +398,14 @@ public class Repository {
         for (String name : untrackedFiles) {
             System.out.println(name);
         }
+        System.out.println();
+        untrackedFiles.clear();
     }
 
     private static void showFiles(File[] files) {
         for (File file : files) {
-            if (file.isDirectory()) {
-                showFiles(file.listFiles());
-            } else {
-                String name = sha1(readContents(file));
-                File inBlob = join(BLOB_DIR, name);
-                File inStage = join(STAGE_DIR, name);
-                if (!inBlob.exists() && !inStage.exists()) {
+            if (!file.isDirectory()) {
+                if (!head.getMap().containsKey(file.getName()) && !stageMap.containsKey(file.getName())) {
 //                    System.out.println(file.getName());
                     untrackedFiles.add(file.getName());
                 }
@@ -434,34 +440,20 @@ public class Repository {
             int i;
             for (i = 0; i < branchList.size(); i++) {
                 Branch branch = branchList.get(i);
-                if (i == 0 && branch.getName().equals(args[1])) {
+                String branchName = branch.getName();
+                if (i == 0 && branchName.equals(args[1])) {
                     // if that branch is the current branch
                     System.out.println("No need to checkout the current branch.");
                     System.exit(0);
-                } else if (branch.getName().equals(args[1])) {
+                } else if (branchName.equals(args[1])) {
+                    Commit commit = branch.getCommit();
+
+                    checkCommit(commit);
+
                     branchList.remove(i);
                     branchList.add(0, branch); // add the head of the branch
-
-                    Commit commit = branch.getCommit();
                     head = commit;
 
-                    Map<String, String> map = commit.getMap();
-
-                    // delete
-                    for (File file : CWD.listFiles()) {
-                        if (file.isFile()) {
-                            /** !DANGEROUS */
-//                            file.delete();
-                        }
-                    }
-
-                    // put the files in the commit at the head of the given branch in the working directory
-                    for (String filename : map.keySet()) {
-                        File file = join(BLOB_DIR, map.get(filename));
-                        writeContents(join(CWD, filename), readContents(file));
-                    }
-                    stageMap.clear();
-                    removalFileList.clear();
                     break;
                 }
             }
@@ -474,21 +466,59 @@ public class Repository {
         writeEnd();
     }
 
+    private static void checkCommit(Commit commit) {
+        Map<String, String> currentMap = head.getMap();
+        Map<String, String> checkoutBranchMap = commit.getMap();
+
+        // check
+        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
+            if (!currentMap.containsKey(fileName) && checkoutBranchMap.containsKey(fileName)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
+        }
+
+        // put the files in the commit at the head of the given branch in the working directory
+        for (String filename : checkoutBranchMap.keySet()) {
+            /**
+             * overwriting the versions of the files
+             */
+            File file = join(BLOB_DIR, checkoutBranchMap.get(filename));
+            writeContents(join(CWD, filename), readContents(file));
+        }
+
+        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
+            /** Any files that tracked in the current branch
+             * but are not present in the checked-out branch
+             * are deleted
+             * */
+            if (!checkoutBranchMap.containsKey(fileName)) {
+                join(CWD, fileName).delete();
+            }
+        }
+        stageMap.clear();
+        for (String fileName : stageMap.values()) {
+            join(STAGE_DIR, fileName).delete();
+        }
+        removalFileList.clear();
+    }
+
     /**
      * if file is in the map, check out the file into the CWD
      * and then clear the stage with respect to the file
-     * @param map map from file name to sha1
+     *
+     * @param map      map from file name to sha1
      * @param filename filename
      */
     private static void checkIsExist(Map<String, String> map, String filename) {
-        if (!map.containsKey(filename)) {
+        // get the filename in the stage area
+        String sha1 = map.getOrDefault(filename, null);
+        if (sha1 == null) {
             // if the file does not exist in the previous commit, aborting
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         } else {
             /** 1. overwrite the file */
-            // get the filename in the stage area
-            String sha1 = map.get(filename);
             // obtain the file
             File file = join(BLOB_DIR, sha1);
             writeContents(join(CWD, filename), readContents(file));
@@ -551,46 +581,21 @@ public class Repository {
      * Checks out all the files tracked by the given commit
      * Removes tracked files that are not present in that commit
      * move the current branch's head to that commit node
-     * <p>
      * The staging area is cleared
      */
     public static void reset(String commitId) {
         readInitial();
-
         // find the commit
         Commit commit = readObject(join(COMMIT_DIR, commitId), Commit.class);
         if (commit == null) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
         }
-
-        Map<String, String> map = commit.getMap();
-
-        // Removes tracked files that are not present in that commit.
-        for (File file : CWD.listFiles()) {
-            if (!map.containsKey(file)) {
-                // !DANGEROUS
-//                file.delete();
-            }
-        }
-
-        // write
-        for (String filename : map.keySet()) {
-            writeContents(join(CWD, filename), readContents(join(BLOB_DIR, map.get(filename))));
-        }
-
-        // The staging area is cleared.
-        stageMap.clear();
-        for (File file : STAGE_MAP.listFiles()) {
-            file.delete();
-        }
-        removalFileList.clear();
-
+        checkCommit(commit);
         // moves the current branch’s head to that commit node
         head = commit;
         Branch branch = branchList.get(0);
         branch.setCommit(head);
-
         writeEnd();
     }
 
@@ -602,8 +607,8 @@ public class Repository {
      * 1. MODIFIED in OTHER but not HEAD -> OTHER
      * 2. MODIFIED in HEAD but not OTHER -> HEAD
      * 3. MODIFIED in BOTH:
-     *      if changed in the same way(either deleted or changed): -> HEAD
-     *      if changed in the different way: -> CONFLICT
+     * if changed in the same way(either deleted or changed): -> HEAD
+     * if changed in the different way: -> CONFLICT
      * 4. NOT in SPLIT nor OTHER but in HEAD -> HEAD
      * 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
      * 6. UNMODIFIED in HEAD and PRESENT in SPLIT but NOT in OTHER -> REMOVE
@@ -615,7 +620,7 @@ public class Repository {
         boolean isConflict = false;
 
         // check whether there are staged additions or removals present
-        if (stageMap.size() == 0 && removalFileList.size() == 0) {
+        if (stageMap.size() != 0 || removalFileList.size() != 0) {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
@@ -641,6 +646,18 @@ public class Repository {
 
         // find the split Commit
         Commit split = findCommonAncestor(head, other.getCommit());
+//        System.out.println("==check==");
+
+//        System.out.println(split);
+//        System.out.println(split == null);
+//        printInformation(head.getParent());
+//        System.out.println(head.getParent());
+//        System.out.println(head.getParent().hashCode());
+//
+//        printInformation(other.getCommit().getParent());
+//        System.out.println(other.getCommit().getParent());
+//        System.out.println(other.getCommit().getParent().hashCode());
+
         if (split == null) {
             System.out.println("These two branches don't have a common ancestor");
             System.exit(0);
@@ -652,15 +669,14 @@ public class Repository {
              *  and the operation ends with the message */
             System.out.println("Given branch is an ancestor of the current branch.");
             System.exit(0);
-        }else if (split.equals(head)) {
+        } else if (split.equals(head)) {
             /** If the split point is the current branch,
              * then the effect is to check out the given branch,
              * and the operation ends after printing the message  */
-            checkout(new String[] {"checkout", other.getName()});
+            checkout(new String[]{"checkout", other.getName()});
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
-
 
         Map<String, String> splitMap = split.getMap();
         Map<String, String> headMap = head.getMap();
@@ -701,7 +717,7 @@ public class Repository {
             /**
              * conflict 3
              */
-            if (headVersion != null && otherVersion != null && !headVersion.equals(otherVersion)) {
+            if (headVersion != null && otherVersion != null && !otherVersion.equals(splitVersion) && !headVersion.equals(splitVersion) && !headVersion.equals(otherVersion)) {
                 File file1 = join(BLOB_DIR, headVersion);
                 File file2 = join(BLOB_DIR, otherVersion);
 
@@ -723,13 +739,13 @@ public class Repository {
         /** up here we have solved the files in the split */
 
         //TODO 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
-        for (String fileName: otherMap.keySet()) {
+        for (String fileName : otherMap.keySet()) {
             if (!splitMap.containsKey(fileName)) {
                 String otherVersion = otherMap.get(fileName);
                 String headVersion = headMap.getOrDefault(fileName, null);
                 if (headVersion == null) {
                     /** change */
-                    File file = join(BLOB_DIR, fileName);
+                    File file = join(BLOB_DIR, otherVersion);
                     writeContents(join(CWD, fileName), readContents(file));
                     putStage(fileName, join(CWD, fileName));
                 } else if (!headVersion.equals(otherVersion)) {
@@ -745,6 +761,7 @@ public class Repository {
         }
 
         if (!isConflict) {
+            writeEnd();
             commit("Merged " + branchName + " into " + branchList.get(0).getName(), other.getCommit());
         } else {
             System.out.println("Encountered a merge conflict.");
@@ -759,15 +776,15 @@ public class Repository {
     }
 
     private static Commit findCommonAncestor(Commit commit1, Commit commit2) {
-        HashSet<Commit> ancestors = new HashSet<>();
+        HashSet<String> ancestors = new HashSet<>();
         while (commit1 != null) {
-            ancestors.add(commit1);
+            ancestors.add(commit1.getId());
             commit1 = commit1.getParent();
         }
 
         while (commit2 != null) {
-            if (ancestors.contains(commit2)) {
-                return commit2;
+            if (ancestors.contains(commit2.getId())) {
+                return readObject(join(COMMIT_DIR, commit2.getId()), Commit.class);
             }
             commit2 = commit2.getParent();
         }
@@ -788,14 +805,11 @@ public class Repository {
         removalFileList = readObject(STAGE_REMOVAL, ArrayList.class);
         head = readObject(HEAD, Commit.class);
         stageMap = readObject(STAGE_MAP, TreeMap.class);
-        branchList = readObject(BRANCH, ArrayList.class);
+        branchList = readObject(BRANCH, LinkedList.class);
     }
 
     private static void writeEnd() {
         writeObject(HEAD, head); // the current commit
-
-//        System.out.println("writeInitial" + head);
-
         writeObject(STAGE_MAP, (Serializable) stageMap); // the map used to store the all information of stage area
         writeObject(BRANCH, (Serializable) branchList); // the branch list
         writeObject(STAGE_REMOVAL, (Serializable) removalFileList); //
