@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static gitlet.Utils.*;
@@ -288,9 +289,7 @@ public class Repository {
      */
     public static void log() {
         readInitial();
-
         Commit commit = head;
-        Formatter formatter = new Formatter();
         while (commit != null) {
             printInformation(commit);
             commit = commit.getParent();
@@ -308,8 +307,6 @@ public class Repository {
 
     private static void printInformation(Commit commit) {
 
-        Formatter formatter = new Formatter();
-
         System.out.println("===");
 //       System.out.println("log :" + commit); // used for testing
         System.out.println("commit " + commit.getId());
@@ -318,9 +315,8 @@ public class Repository {
             System.out.printf("Merge: %.7s %.7s", commit.getParent().getId(), commit.getSecondParent().getId());
         }
 
-        formatter.format("%1$ta %1$tb %1$td %1$tT %1$tY %1$tZ", commit.getTimestamp());
-        String formattedDate = formatter.toString();
-        System.out.println("Date " + formattedDate);
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyy Z", Locale.ENGLISH);
+        System.out.println("Date: " + sdf.format(commit.getTimestamp()));
 
         System.out.println(commit.getMessage());
         System.out.println();
@@ -433,7 +429,6 @@ public class Repository {
                 System.exit(0);
             }
             checkIsExist(commit.getMap(), args[3]);
-
         } else if (args.length == 2) {
             /** java gitlet.Main checkout [branch name] */
             int i;
@@ -479,6 +474,12 @@ public class Repository {
         writeEnd();
     }
 
+    /**
+     * if file is in the map, check out the file into the CWD
+     * and then clear the stage with respect to the file
+     * @param map map from file name to sha1
+     * @param filename filename
+     */
     private static void checkIsExist(Map<String, String> map, String filename) {
         if (!map.containsKey(filename)) {
             // if the file does not exist in the previous commit, aborting

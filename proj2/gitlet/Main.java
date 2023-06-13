@@ -85,7 +85,7 @@ public class Main {
         }
     }
     private static void validateArgs(String[] args, int num) {
-        if (args.length != num || !args[0].equals("checkout")) {
+        if (args.length != num) {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
