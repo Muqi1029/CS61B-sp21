@@ -180,6 +180,8 @@ public class Repository {
             if (join(STAGE_DIR, previousVersion).exists()) {
                 join(STAGE_DIR, previousVersion).delete();
             }
+        } else {
+            removalFileList.remove(fileName);
         }
         // if these two versions are identical, do nothing
         writeEnd();
@@ -457,6 +459,8 @@ public class Repository {
                 // doesn't have the branch name
                 System.out.println("No such branch exists.");
             }
+        } else {
+            System.out.println("Incorrect operands.");
         }
         // persistence
         writeEnd();
