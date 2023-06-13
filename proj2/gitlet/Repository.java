@@ -79,7 +79,7 @@ public class Repository {
     /**
      * the author of all commits
      */
-    private static final String author = "muqi";
+    private static final String AUTHOR = "muqi";
 
     /**
      * used for stage mapping from the name to SHA1
@@ -97,7 +97,7 @@ public class Repository {
     /**
      * store the untracked files
      */
-    private static final List<String> untrackedFiles = new ArrayList<>();
+    private static final List<String> UNTRACKEDFILES = new ArrayList<>();
 
 
     /** ============================================================ */
@@ -128,7 +128,7 @@ public class Repository {
         }
 
         /** make the initial commit */
-        head = new Commit("initial commit", null, new Date(0), author);
+        head = new Commit("initial commit", null, new Date(0), AUTHOR);
         branchList.add(new Branch("master", head));
 
         // commit
@@ -209,7 +209,7 @@ public class Repository {
         }
 
         // 1. create a commit object whose parent is head
-        Commit commit = new Commit(message, head, author);
+        Commit commit = new Commit(message, head, AUTHOR);
         if (secondParent != null) {
             commit.setSecondParent(secondParent);
         }
@@ -240,10 +240,6 @@ public class Repository {
 
         // 4. write this commit object into commit directory
         writeObject(join(COMMIT_DIR, commit.getId()), commit);
-
-        /** test code */
-//        System.out.println("commit" + commit);
-//        System.out.println();
 
         // 5. set head to the new commit
         head = commit;
@@ -303,10 +299,10 @@ public class Repository {
      * Like log, except displays information about all commits ever made
      * The order of the commits does not matter
      */
-    public static void global_log() {
+    public static void globalLog() {
         /** iterate over files within the COMMIT_DIR */
-        for (String fileName :
-                Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
+        for (String fileName
+                : Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
             Commit commit = readObject(join(COMMIT_DIR, fileName), Commit.class);
             printInformation(commit);
         }
@@ -315,7 +311,7 @@ public class Repository {
     private static void printInformation(Commit commit) {
 
         System.out.println("===");
-//       System.out.println("log :" + commit); // used for testing
+        // System.out.println("log :" + commit); // used for testing
         System.out.println("commit " + commit.getId());
 
         if (commit.getSecondParent() != null) {
@@ -340,8 +336,8 @@ public class Repository {
         readInitial();
 
         boolean flag = false;
-        for (String name :
-                Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
+        for (String name
+                : Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
             Commit commit = readObject(join(COMMIT_DIR, name), Commit.class);
             if (commit.getMessage().equals(message)) {
                 System.out.println(commit.getId());
@@ -383,7 +379,7 @@ public class Repository {
 
         System.out.println("=== Modifications Not Staged For Commit ===");
 
-        //TODO: Tracked in the current commit, changed in the working directory, but not staged;
+        // Tracked in the current commit, changed in the working directory, but not staged;
         // or Staged for addition, but with different contents than in the working directory;
         // or Staged for addition, but deleted in the working directory;
         // or Not staged for removal, but tracked in the current commit and deleted from the working directory.
@@ -394,20 +390,20 @@ public class Repository {
         /** the untracked files refer to those that not only don't exist
          * in previous snapshots, but also in the stage area.  */
         showFiles(CWD.listFiles());
-        Collections.sort(untrackedFiles);
-        for (String name : untrackedFiles) {
+        Collections.sort(UNTRACKEDFILES);
+        for (String name : UNTRACKEDFILES) {
             System.out.println(name);
         }
         System.out.println();
-        untrackedFiles.clear();
+        UNTRACKEDFILES.clear();
     }
 
     private static void showFiles(File[] files) {
         for (File file : files) {
             if (!file.isDirectory()) {
                 if (!head.getMap().containsKey(file.getName()) && !stageMap.containsKey(file.getName())) {
-//                    System.out.println(file.getName());
-                    untrackedFiles.add(file.getName());
+                    // System.out.println(file.getName());
+                    UNTRACKEDFILES.add(file.getName());
                 }
             }
         }
@@ -555,7 +551,7 @@ public class Repository {
     /**
      * =================== rm-branch ===========================
      */
-    public static void rm_branch(String branchName) {
+    public static void rmBranch(String branchName) {
         readInitial();
 
         boolean flag = true;
@@ -601,8 +597,10 @@ public class Repository {
 
     /**
      * == MERGE files from the given branch into the current branch
-     * if the split point is the same commit as the given branch, then we do nothing ("Given branch is an ancestor of the current branch")
-     * if the split point is the current branch, then the effect is to check out the given branch ("Current branch fast-forward.")
+     * if the split point is the same commit as the given branch,
+     * then we do nothing ("Given branch is an ancestor of the current branch")
+     * if the split point is the current branch,
+     * then the effect is to check out the given branch ("Current branch fast-forward.")
      * else (the more common situation):
      * 1. MODIFIED in OTHER but not HEAD -> OTHER
      * 2. MODIFIED in HEAD but not OTHER -> HEAD
@@ -738,7 +736,7 @@ public class Repository {
 
         /** up here we have solved the files in the split */
 
-        //TODO 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
+        // 5. NOT in SPLIT nor HEAD but in OTHER -> OTHER
         for (String fileName : otherMap.keySet()) {
             if (!splitMap.containsKey(fileName)) {
                 String otherVersion = otherMap.get(fileName);

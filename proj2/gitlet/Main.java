@@ -45,7 +45,7 @@ public class Main {
             case "global-log":
                 /** java gitlet.Main global-log */
                 validateArgs(args, 1);
-                Repository.global_log();
+                Repository.globalLog();
                 break;
             case "find":
                 /** java gitlet.Main find [file name] */
@@ -67,7 +67,7 @@ public class Main {
                 break;
             case "rm-branch":
                 validateArgs(args, 2);
-                Repository.rm_branch(args[1]);
+                Repository.rmBranch(args[1]);
                 break;
             case "reset":
                 /** java gitlet.Main reset [commit Id] */

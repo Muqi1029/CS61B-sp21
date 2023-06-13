@@ -26,7 +26,6 @@ public class Commit implements Serializable {
     /**
      * the time of commit
      */
-    //TODO format: 00:00:00 UTC, Thursday, 1 January 1970
     private final Date timestamp;
 
     /**
@@ -93,9 +92,9 @@ public class Commit implements Serializable {
         }
         if (parent == null && secondParent == null) {
             return Utils.sha1(message, timestamp.toString(), valuesInBlob.toString());
-        }else if (parent != null && secondParent == null) {
+        } else if (parent != null && secondParent == null) {
             return Utils.sha1(message, parent.toString(), timestamp.toString(), valuesInBlob.toString());
-        }else if (parent != null && secondParent != null) {
+        } else if (parent != null && secondParent != null) {
             return Utils.sha1(message, parent.toString(), secondParent.toString(), timestamp.toString(), valuesInBlob.toString());
         }
         return null;
@@ -114,13 +113,13 @@ public class Commit implements Serializable {
      */
     @Override
     public String toString() {
-        return "Commit{" +
-                "message='" + message + '\'' +
-                ", parent=" + parent +
-                ", timestamp=" + timestamp +
-                ", author='" + author + '\'' +
-                ", map=" + map +
-                ", secondParent=" + secondParent +
-                '}';
+        return "Commit{"
+                + "message='" + message + '\''
+                + ", parent=" + parent
+                + ", timestamp=" + timestamp
+                + ", author='" + author + '\''
+                + ", map=" + map
+                + ", secondParent=" + secondParent
+                + '}';
     }
 }
