@@ -618,7 +618,9 @@ public class Repository {
      * 7. UNMODIFIED in OTHER and PRESENT in SPLIT but NOT in HEAD -> STAY ABSENT
      */
     public static void merge(String branchName) {
+
         readInitial();
+
 
         boolean isConflict = false;
 
@@ -629,7 +631,7 @@ public class Repository {
         }
 
         if (branchList.get(0).getName().equals(branchName)) {
-            System.out.println("Cannot merge a branch with itself");
+            System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
 
@@ -646,6 +648,7 @@ public class Repository {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
+
 
         // find the split Commit
         Commit split = findCommonAncestor(head, other.getCommit());
@@ -684,6 +687,19 @@ public class Repository {
         Map<String, String> splitMap = split.getMap();
         Map<String, String> headMap = head.getMap();
         Map<String, String> otherMap = other.getCommit().getMap();
+
+        /**
+         *  If an untracked file in the current commit
+         *  would be overwritten or deleted by the merge,
+         *  print `There is an untracked file in the way;
+         *  delete it, or add and commit it first.` and exit;
+         */
+        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))){
+             if (!headMap.containsKey(fileName) && otherMap.containsKey(fileName)) {
+                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                 System.exit(0);
+             }
+        }
 
         /** traverse in split Commit */
         for (String fileName : splitMap.keySet()) {
@@ -725,7 +741,7 @@ public class Repository {
                 File file2 = join(BLOB_DIR, otherVersion);
 
                 writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
-                        "=======\n", readContents(file2), "\n>>>>>>>");
+                        "\n=======\n", readContents(file2), "\n>>>>>>>");
                 putStage(fileName, join(CWD, fileName));
                 isConflict = true;
             }
@@ -756,7 +772,7 @@ public class Repository {
                     File file1 = join(BLOB_DIR, headVersion);
                     File file2 = join(BLOB_DIR, otherVersion);
                     writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
-                            "=======\n", readContents(file2), "\n>>>>>>>");
+                            "\n=======\n", readContents(file2), "\n>>>>>>>");
                     putStage(fileName, join(CWD, fileName));
                     isConflict = true;
                 }
@@ -765,7 +781,7 @@ public class Repository {
 
         if (!isConflict) {
             writeEnd();
-            commit("Merged " + branchName + " into " + branchList.get(0).getName(), other.getCommit());
+            commit("Merged " + branchName + " into " + branchList.get(0).getName() + ".", other.getCommit());
         } else {
             System.out.println("Encountered a merge conflict.");
             writeEnd();
