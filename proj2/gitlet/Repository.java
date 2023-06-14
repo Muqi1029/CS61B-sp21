@@ -738,7 +738,8 @@ public class Repository {
             /** conflict 2 */
             if (otherVersion == null && headVersion != null && !headVersion.equals(splitVersion)) {
                 File file = join(BLOB_DIR, headVersion);
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(join(file)), "\n=======\n>>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(join(file)),
+                        "\n=======\n>>>>>>>");
                 putStage(fileName, file);
                 isConflict = true;
             }
