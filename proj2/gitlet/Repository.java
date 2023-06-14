@@ -427,11 +427,11 @@ public class Repository {
             checkIsExist(map, args[2]);
         } else if (args.length == 4 && args[2].equals("--")) {
             /** java gitlet.Main checkout [commit id] -- [file name] */
-            Commit commit = readObject(join(COMMIT_DIR, args[1]), Commit.class);
-            if (commit == null) {
+            if (!(join(COMMIT_DIR, args[1]).exists())) {
                 System.out.println("No commit with that id exists.");
                 System.exit(0);
             }
+            Commit commit = readObject(join(COMMIT_DIR, args[1]), Commit.class);
             checkIsExist(commit.getMap(), args[3]);
         } else if (args.length == 2) {
             /** java gitlet.Main checkout [branch name] */
@@ -461,6 +461,7 @@ public class Repository {
             }
         } else {
             System.out.println("Incorrect operands.");
+            System.exit(0);
         }
         // persistence
         writeEnd();
