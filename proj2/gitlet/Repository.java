@@ -416,7 +416,6 @@ public class Repository {
      */
     public static void checkout(String[] args) {
         readInitial();
-
         if (args[1].equals("--") && args.length == 3) {
             /** java gitlet.Main checkout -- [file name] */
             // Takes the version of the file as it exists in the head commit and puts it in the working directory,
@@ -427,7 +426,8 @@ public class Repository {
             checkIsExist(map, args[2]);
         } else if (args.length == 4 && args[2].equals("--")) {
             /** java gitlet.Main checkout [commit id] -- [file name] */
-            if (!(join(COMMIT_DIR, args[1]).exists())) {
+            String commitId = abbr2All(args[1]);
+            if (commitId == null) {
                 System.out.println("No commit with that id exists.");
                 System.exit(0);
             }
@@ -465,6 +465,20 @@ public class Repository {
         }
         // persistence
         writeEnd();
+    }
+
+
+    private static String abbr2All(String commitId) {
+        if (plainFilenamesIn(COMMIT_DIR) == null) {
+            return null;
+        }
+        for (String name
+                : Objects.requireNonNull(plainFilenamesIn(COMMIT_DIR))) {
+            if (name.startsWith(commitId)) {
+                return name;
+            }
+        }
+        return null;
     }
 
     private static void checkCommit(Commit commit) {
@@ -587,11 +601,12 @@ public class Repository {
     public static void reset(String commitId) {
         readInitial();
         // find the commit
-        Commit commit = readObject(join(COMMIT_DIR, commitId), Commit.class);
-        if (commit == null) {
+        String fullCommitId = abbr2All(commitId);
+        if (fullCommitId == null) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
         }
+        Commit commit = readObject(join(COMMIT_DIR, commitId), Commit.class);
         checkCommit(commit);
         // moves the current branch’s head to that commit node
         head = commit;
@@ -694,12 +709,7 @@ public class Repository {
          *  print `There is an untracked file in the way;
          *  delete it, or add and commit it first.` and exit;
          */
-        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
-            if (!headMap.containsKey(fileName) && otherMap.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-                System.exit(0);
-            }
-        }
+        checkMerge(headMap, otherMap);
 
         /** traverse in split Commit */
         for (String fileName : splitMap.keySet()) {
@@ -720,7 +730,7 @@ public class Repository {
              * */
             if (headVersion == null && otherVersion != null && !splitVersion.equals(otherVersion)) {
                 File file = join(BLOB_DIR, otherVersion);
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n=======\n", readContents(file), "\n>>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD=======", readContents(file), ">>>>>>>");
                 putStage(fileName, file);
                 isConflict = true;
             }
@@ -728,7 +738,7 @@ public class Repository {
             /** conflict 2 */
             if (otherVersion == null && headVersion != null && !headVersion.equals(splitVersion)) {
                 File file = join(BLOB_DIR, headVersion);
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(join(file)), "\n=======\n>>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(join(file)), "=======>>>>>>>");
                 putStage(fileName, file);
                 isConflict = true;
             }
@@ -740,8 +750,8 @@ public class Repository {
                 File file1 = join(BLOB_DIR, headVersion);
                 File file2 = join(BLOB_DIR, otherVersion);
 
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
-                        "\n=======\n", readContents(file2), "\n>>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(file1),
+                        "=======", readContents(file2), ">>>>>>>");
                 putStage(fileName, join(CWD, fileName));
                 isConflict = true;
             }
@@ -771,8 +781,8 @@ public class Repository {
                     /** Conflict 4 */
                     File file1 = join(BLOB_DIR, headVersion);
                     File file2 = join(BLOB_DIR, otherVersion);
-                    writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
-                            "\n=======\n", readContents(file2), "\n>>>>>>>");
+                    writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(file1),
+                            "=======", readContents(file2), ">>>>>>>");
                     putStage(fileName, join(CWD, fileName));
                     isConflict = true;
                 }
@@ -807,6 +817,9 @@ public class Repository {
         HashSet<String> ancestors = new HashSet<>();
         while (commit1 != null) {
             ancestors.add(commit1.getId());
+            if (commit1.getSecondParent() != null) {
+                ancestors.add(commit1.getSecondParent().getId());
+            }
             commit1 = commit1.getParent();
         }
 
