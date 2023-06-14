@@ -694,11 +694,11 @@ public class Repository {
          *  print `There is an untracked file in the way;
          *  delete it, or add and commit it first.` and exit;
          */
-        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))){
-             if (!headMap.containsKey(fileName) && otherMap.containsKey(fileName)) {
-                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-                 System.exit(0);
-             }
+        for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
+            if (!headMap.containsKey(fileName) && otherMap.containsKey(fileName)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
         }
 
         /** traverse in split Commit */
@@ -779,12 +779,21 @@ public class Repository {
             }
         }
 
-        if (!isConflict) {
-            writeEnd();
-            commit("Merged " + branchName + " into " + branchList.get(0).getName() + ".", other.getCommit());
-        } else {
+        writeEnd();
+        commit("Merged " + branchName + " into " + branchList.get(0).getName() + ".", other.getCommit());
+        if (isConflict) {
             System.out.println("Encountered a merge conflict.");
-            writeEnd();
+        }
+        writeEnd();
+    }
+
+    private static void checkMerge(Map<String, String> currentMap, Map<String, String> otherMap) {
+        for (String name
+                : Objects.requireNonNull(plainFilenamesIn(CWD))) {
+            if (!currentMap.containsKey(name) && otherMap.containsKey(name)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
         }
     }
 
