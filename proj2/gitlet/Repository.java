@@ -426,12 +426,12 @@ public class Repository {
             checkIsExist(map, args[2]);
         } else if (args.length == 4 && args[2].equals("--")) {
             /** java gitlet.Main checkout [commit id] -- [file name] */
-            String commitId = abbr2All(args[1]);
-            if (commitId == null) {
+            String fullCommitId = abbr2All(args[1]);
+            if (fullCommitId == null) {
                 System.out.println("No commit with that id exists.");
                 System.exit(0);
             }
-            Commit commit = readObject(join(COMMIT_DIR, args[1]), Commit.class);
+            Commit commit = readObject(join(COMMIT_DIR, fullCommitId), Commit.class);
             checkIsExist(commit.getMap(), args[3]);
         } else if (args.length == 2) {
             /** java gitlet.Main checkout [branch name] */
@@ -684,13 +684,13 @@ public class Repository {
             System.exit(0);
         }
 
-        if (split.equals(other.getCommit())) {
+        if (split.getId().equals(other.getCommit().getId())) {
             /** If the split point is the same commit as the given branch,
              *  then we do nothing; the merge is complete,
              *  and the operation ends with the message */
             System.out.println("Given branch is an ancestor of the current branch.");
             System.exit(0);
-        } else if (split.equals(head)) {
+        } else if (split.getId().equals(head.getId())) {
             /** If the split point is the current branch,
              * then the effect is to check out the given branch,
              * and the operation ends after printing the message  */
@@ -730,7 +730,7 @@ public class Repository {
              * */
             if (headVersion == null && otherVersion != null && !splitVersion.equals(otherVersion)) {
                 File file = join(BLOB_DIR, otherVersion);
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD=======", readContents(file), ">>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n=======\n", readContents(file), "\n>>>>>>>");
                 putStage(fileName, file);
                 isConflict = true;
             }
@@ -738,7 +738,7 @@ public class Repository {
             /** conflict 2 */
             if (otherVersion == null && headVersion != null && !headVersion.equals(splitVersion)) {
                 File file = join(BLOB_DIR, headVersion);
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(join(file)), "=======>>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(join(file)), "\n=======\n>>>>>>>");
                 putStage(fileName, file);
                 isConflict = true;
             }
@@ -750,8 +750,8 @@ public class Repository {
                 File file1 = join(BLOB_DIR, headVersion);
                 File file2 = join(BLOB_DIR, otherVersion);
 
-                writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(file1),
-                        "=======", readContents(file2), ">>>>>>>");
+                writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
+                        "\n=======\n", readContents(file2), "\n>>>>>>>");
                 putStage(fileName, join(CWD, fileName));
                 isConflict = true;
             }
@@ -781,8 +781,8 @@ public class Repository {
                     /** Conflict 4 */
                     File file1 = join(BLOB_DIR, headVersion);
                     File file2 = join(BLOB_DIR, otherVersion);
-                    writeContents(join(CWD, fileName), "<<<<<<< HEAD", readContents(file1),
-                            "=======", readContents(file2), ">>>>>>>");
+                    writeContents(join(CWD, fileName), "<<<<<<< HEAD\n", readContents(file1),
+                            "\n=======\n", readContents(file2), "\n>>>>>>>");
                     putStage(fileName, join(CWD, fileName));
                     isConflict = true;
                 }
