@@ -25,11 +25,11 @@ Here are a few examples:
 
 - status
 
-![image-20230615081348161](D:.\assets\image-20230615081348161.png)
+<img src="assets/image-20230615081348161.png" width="70%">
 
 - log
 
-![image-20230615081519386](.\assets\image-20230615081519386.png)
+<img src="assets/image-20230615081519386.png">
 
 The specific code and design document can be found in the `proj2` folder.
 
