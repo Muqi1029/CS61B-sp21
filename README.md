@@ -1,5 +1,5 @@
 # CS61B-sp21
-DS&amp;Algorithm in J
+DS&amp;Algorithm in Java
 
 
 
