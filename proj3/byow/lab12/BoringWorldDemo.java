@@ -5,7 +5,7 @@ import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 
 /**
- *  Draws a world that is mostly empty except for a small region.
+ * Draws a world that is mostly empty except for a small region.
  */
 public class BoringWorldDemo {
 
@@ -18,6 +18,7 @@ public class BoringWorldDemo {
         ter.initialize(WIDTH, HEIGHT);
 
         // initialize tiles
+        /** each tile is 16 pixels by 16 pixels */
         TETile[][] world = new TETile[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x += 1) {
             for (int y = 0; y < HEIGHT; y += 1) {
